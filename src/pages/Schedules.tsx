@@ -32,6 +32,8 @@ export default function Schedules() {
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
   const [assignments, setAssignments] = useState<Record<string, string>>({})
+  const [leitor1, setLeitor1] = useState('none')
+  const [leitor2, setLeitor2] = useState('none')
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,13 +41,15 @@ export default function Schedules() {
 
     const newAssignments = Object.entries(assignments)
       .filter(([_, memberId]) => memberId !== 'none')
-      .map(([roleId, memberId]) => ({ roleId, memberId }))
+      .map(([roleId, memberId]) => ({ id: Math.random().toString(), roleId, memberId }))
 
     addSchedule({
       title,
       date,
       time,
       assignments: newAssignments,
+      leitor1: leitor1 !== 'none' ? leitor1 : null,
+      leitor2: leitor2 !== 'none' ? leitor2 : null,
     })
 
     toast({ title: 'Escala criada', description: 'A escala foi salva com sucesso.' })
@@ -54,6 +58,8 @@ export default function Schedules() {
     setDate('')
     setTime('')
     setAssignments({})
+    setLeitor1('none')
+    setLeitor2('none')
   }
 
   const sortedSchedules = [...schedules].sort(
@@ -125,9 +131,74 @@ export default function Schedules() {
                     const availableMembers = members.filter(
                       (m) => m.roles.includes(role.id) && m.status === 'active',
                     )
-                    const assignedMemberIds = Object.values(assignments).filter(
-                      (id) => id !== 'none',
-                    )
+                    const assignedMemberIds = [
+                      ...Object.values(assignments),
+                      leitor1,
+                      leitor2,
+                    ].filter((id) => id !== 'none')
+
+                    if (role.name === 'Leitor') {
+                      return (
+                        <div key="leitores" className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-3 p-3 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors">
+                            <Label className="md:text-right font-medium text-slate-700">
+                              Leitor 1
+                            </Label>
+                            <div className="md:col-span-2">
+                              <Select value={leitor1} onValueChange={setLeitor1}>
+                                <SelectTrigger className="bg-white">
+                                  <SelectValue placeholder="Selecione o Leitor 1" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none" className="text-slate-400 italic">
+                                    Deixar vago
+                                  </SelectItem>
+                                  {availableMembers.map((m) => (
+                                    <SelectItem
+                                      key={m.id}
+                                      value={m.id}
+                                      disabled={
+                                        assignedMemberIds.includes(m.id) && leitor1 !== m.id
+                                      }
+                                    >
+                                      {m.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-3 p-3 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors">
+                            <Label className="md:text-right font-medium text-slate-700">
+                              Leitor 2 (Opcional)
+                            </Label>
+                            <div className="md:col-span-2">
+                              <Select value={leitor2} onValueChange={setLeitor2}>
+                                <SelectTrigger className="bg-white">
+                                  <SelectValue placeholder="Selecione o Leitor 2" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none" className="text-slate-400 italic">
+                                    Deixar vago
+                                  </SelectItem>
+                                  {availableMembers.map((m) => (
+                                    <SelectItem
+                                      key={m.id}
+                                      value={m.id}
+                                      disabled={
+                                        assignedMemberIds.includes(m.id) && leitor2 !== m.id
+                                      }
+                                    >
+                                      {m.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    }
 
                     return (
                       <div
@@ -227,6 +298,7 @@ export default function Schedules() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {roles.map((role) => {
+                      if (role.name === 'Leitor') return null
                       const assignment = schedule.assignments.find((a) => a.roleId === role.id)
                       const member = assignment
                         ? members.find((m) => m.id === assignment.memberId)
@@ -251,6 +323,30 @@ export default function Schedules() {
                         </div>
                       )
                     })}
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 relative overflow-hidden">
+                      <div
+                        className={`absolute top-0 left-0 w-1 h-full ${schedule.leitor1 ? 'bg-indigo-400' : 'bg-amber-400'}`}
+                      ></div>
+                      <div className="text-[11px] text-slate-500 font-bold mb-1 uppercase tracking-wider pl-2">
+                        Leitor 1
+                      </div>
+                      <div
+                        className={`font-semibold pl-2 ${schedule.leitor1 ? 'text-slate-900 text-sm' : 'text-amber-600 text-sm italic'}`}
+                      >
+                        {members.find((m) => m.id === schedule.leitor1)?.name || 'Vaga Aberta'}
+                      </div>
+                    </div>
+                    {schedule.leitor2 && (
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-indigo-400"></div>
+                        <div className="text-[11px] text-slate-500 font-bold mb-1 uppercase tracking-wider pl-2">
+                          Leitor 2
+                        </div>
+                        <div className="font-semibold pl-2 text-slate-900 text-sm">
+                          {members.find((m) => m.id === schedule.leitor2)?.name}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

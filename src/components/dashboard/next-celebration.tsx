@@ -75,6 +75,44 @@ export function NextCelebration() {
                 </div>
               )
             })}
+            <div className="flex items-center gap-3 bg-background rounded-lg p-2 border shadow-sm">
+              <Avatar className="size-8">
+                {members.find((m) => m.id === next.leitor1)?.avatarUrl ? (
+                  <AvatarImage src={members.find((m) => m.id === next.leitor1)?.avatarUrl} />
+                ) : null}
+                <AvatarFallback>
+                  <User className="size-4" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-primary">Leitor 1</span>
+                <span className="text-sm truncate">
+                  {next.leitor1 ? (
+                    members.find((m) => m.id === next.leitor1)?.name
+                  ) : (
+                    <span className="text-destructive font-medium">Vago</span>
+                  )}
+                </span>
+              </div>
+            </div>
+            {next.leitor2 && (
+              <div className="flex items-center gap-3 bg-background rounded-lg p-2 border shadow-sm">
+                <Avatar className="size-8">
+                  {members.find((m) => m.id === next.leitor2)?.avatarUrl ? (
+                    <AvatarImage src={members.find((m) => m.id === next.leitor2)?.avatarUrl} />
+                  ) : null}
+                  <AvatarFallback>
+                    <User className="size-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-primary">Leitor 2</span>
+                  <span className="text-sm truncate">
+                    {members.find((m) => m.id === next.leitor2)?.name}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

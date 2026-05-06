@@ -35,13 +35,17 @@ export function AddScheduleSheet({ open, onOpenChange }: Props) {
   const [date, setDate] = useState<Date>(new Date())
   const [time, setTime] = useState('19:00')
   const [assignments, setAssignments] = useState<Record<string, string>>({})
+  const [leitor1, setLeitor1] = useState<string>('none')
+  const [leitor2, setLeitor2] = useState<string>('none')
 
   const handleSave = () => {
-    const formattedAssignments = roles.map((r) => ({
-      id: Math.random().toString(),
-      roleId: r.id,
-      memberId: assignments[r.id] || null,
-    }))
+    const formattedAssignments = roles
+      .filter((r) => r.name !== 'Leitor')
+      .map((r) => ({
+        id: Math.random().toString(),
+        roleId: r.id,
+        memberId: assignments[r.id] && assignments[r.id] !== 'none' ? assignments[r.id] : null,
+      }))
 
     addSchedule({
       title,
@@ -49,6 +53,8 @@ export function AddScheduleSheet({ open, onOpenChange }: Props) {
       time,
       status: 'Pendente',
       assignments: formattedAssignments,
+      leitor1: leitor1 !== 'none' ? leitor1 : null,
+      leitor2: leitor2 !== 'none' ? leitor2 : null,
     })
     onOpenChange(false)
   }
@@ -96,29 +102,72 @@ export function AddScheduleSheet({ open, onOpenChange }: Props) {
           </div>
           <div className="space-y-4">
             <h3 className="text-sm font-medium border-b pb-2">Escalar Equipe</h3>
-            {roles.map((role) => (
-              <div key={role.id} className="space-y-2">
-                <Label>{role.name}</Label>
-                <Select
-                  value={assignments[role.id]}
-                  onValueChange={(v) => setAssignments((prev) => ({ ...prev, [role.id]: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um membro" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Deixar vago</SelectItem>
-                    {members
-                      .filter((m) => m.roleIds.includes(role.id) && m.status === 'Ativo')
-                      .map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
+            {roles.map((role) => {
+              if (role.name === 'Leitor') {
+                const leitorMembers = members.filter(
+                  (m) => m.roleIds.includes(role.id) && m.status === 'Ativo',
+                )
+                return (
+                  <div key="leitores" className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Leitor 1</Label>
+                      <Select value={leitor1} onValueChange={setLeitor1}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o Leitor 1" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Deixar vago</SelectItem>
+                          {leitorMembers.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Leitor 2 (Opcional)</Label>
+                      <Select value={leitor2} onValueChange={setLeitor2}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o Leitor 2" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Deixar vago</SelectItem>
+                          {leitorMembers.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )
+              }
+              return (
+                <div key={role.id} className="space-y-2">
+                  <Label>{role.name}</Label>
+                  <Select
+                    value={assignments[role.id] || 'none'}
+                    onValueChange={(v) => setAssignments((prev) => ({ ...prev, [role.id]: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um membro" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Deixar vago</SelectItem>
+                      {members
+                        .filter((m) => m.roleIds.includes(role.id) && m.status === 'Ativo')
+                        .map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )
+            })}
           </div>
         </div>
         <SheetFooter className="pt-4">

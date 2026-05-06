@@ -94,10 +94,11 @@ export const mockSchedules: Schedule[] = [
     status: 'Confirmada',
     assignments: [
       { id: 'a1', roleId: 'r1', memberId: 'm1' },
-      { id: 'a2', roleId: 'r2', memberId: 'm2' },
       { id: 'a3', roleId: 'r3', memberId: 'm2' },
       { id: 'a4', roleId: 'r4', memberId: 'm3' },
     ],
+    leitor1: 'm2',
+    leitor2: 'm5',
   },
   {
     id: 's2',
@@ -108,8 +109,9 @@ export const mockSchedules: Schedule[] = [
     status: 'Pendente',
     assignments: [
       { id: 'a5', roleId: 'r1', memberId: null },
-      { id: 'a6', roleId: 'r2', memberId: 'm5' },
       { id: 'a7', roleId: 'r4', memberId: null },
     ],
+    leitor1: 'm5',
+    leitor2: null,
   },
 ]

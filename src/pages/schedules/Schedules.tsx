@@ -68,6 +68,24 @@ export default function Schedules() {
                         </div>
                       )
                     })}
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground uppercase">Leitor 1</span>
+                      <span
+                        className={
+                          schedule.leitor1 ? 'font-medium' : 'text-destructive font-medium'
+                        }
+                      >
+                        {members.find((m) => m.id === schedule.leitor1)?.name || 'Vago'}
+                      </span>
+                    </div>
+                    {schedule.leitor2 && (
+                      <div className="flex flex-col">
+                        <span className="text-xs text-muted-foreground uppercase">Leitor 2</span>
+                        <span className="font-medium">
+                          {members.find((m) => m.id === schedule.leitor2)?.name}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

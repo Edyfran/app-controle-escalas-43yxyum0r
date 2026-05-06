@@ -31,4 +31,6 @@ export interface Schedule {
   theme?: string
   status: 'Confirmada' | 'Pendente' | 'Rascunho'
   assignments: ScheduleAssignment[]
+  leitor1?: string | null
+  leitor2?: string | null
 }

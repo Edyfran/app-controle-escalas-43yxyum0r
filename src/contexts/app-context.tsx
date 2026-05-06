@@ -41,11 +41,12 @@ const defaultSchedules: Schedule[] = [
     date: formattedNextSunday,
     time: '19:00',
     assignments: [
-      { roleId: '1', memberId: '1' },
-      { roleId: '2', memberId: '3' },
-      { roleId: '3', memberId: '4' },
-      { roleId: '4', memberId: '2' },
+      { id: 'a1', roleId: '1', memberId: '1' },
+      { id: 'a2', roleId: '3', memberId: '4' },
+      { id: 'a3', roleId: '4', memberId: '2' },
     ],
+    leitor1: '3',
+    leitor2: '2',
   },
   {
     id: '2',
@@ -53,9 +54,10 @@ const defaultSchedules: Schedule[] = [
     date: format(addDays(today, 14 - today.getDay()), 'yyyy-MM-dd'),
     time: '10:00',
     assignments: [
-      { roleId: '1', memberId: '4' },
-      { roleId: '4', memberId: '2' },
+      { id: 'a4', roleId: '1', memberId: '4' },
+      { id: 'a5', roleId: '4', memberId: '2' },
     ],
+    leitor1: '1',
   },
 ]
 
