@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Trash2 } from 'lucide-react'
+import { Plus, Search, Trash2, Edit2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -12,15 +12,27 @@ import {
 } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { AddMemberDialog } from '@/components/members/add-member-dialog'
+import { MemberDialog } from '@/components/members/member-dialog'
 import useAppStore from '@/stores/main'
+import { Member } from '@/types'
 
 export default function Members() {
   const { members, roles, deleteMember } = useAppStore()
   const [search, setSearch] = useState('')
-  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [memberToEdit, setMemberToEdit] = useState<Member | null>(null)
 
   const filteredMembers = members.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()))
+
+  const handleAddMember = () => {
+    setMemberToEdit(null)
+    setIsDialogOpen(true)
+  }
+
+  const handleEditMember = (member: Member) => {
+    setMemberToEdit(member)
+    setIsDialogOpen(true)
+  }
 
   return (
     <div className="space-y-6">
@@ -29,7 +41,7 @@ export default function Members() {
           <h2 className="text-2xl font-bold tracking-tight">Membros da Pastoral</h2>
           <p className="text-muted-foreground">Gerencie o cadastro e disponibilidades.</p>
         </div>
-        <Button onClick={() => setIsAddOpen(true)}>
+        <Button onClick={handleAddMember}>
           <Plus className="mr-2 h-4 w-4" /> Cadastrar Membro
         </Button>
       </div>
@@ -53,7 +65,7 @@ export default function Members() {
               <TableHead>Funções</TableHead>
               <TableHead>Frequência</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[100px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -68,14 +80,18 @@ export default function Members() {
                 </TableCell>
                 <TableCell>{member.phone}</TableCell>
                 <TableCell className="flex gap-1 flex-wrap">
-                  {member.roleIds.map((rid) => {
-                    const role = roles.find((r) => r.id === rid)
-                    return role ? (
-                      <Badge key={rid} variant="secondary" className="text-xs">
-                        {role.name}
-                      </Badge>
-                    ) : null
-                  })}
+                  {member.roleIds && member.roleIds.length > 0 ? (
+                    member.roleIds.map((rid) => {
+                      const role = roles.find((r) => r.id === rid)
+                      return role ? (
+                        <Badge key={rid} variant="secondary" className="text-xs">
+                          {role.name}
+                        </Badge>
+                      ) : null
+                    })
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">Nenhuma função</span>
+                  )}
                 </TableCell>
                 <TableCell>{member.availability}</TableCell>
                 <TableCell>
@@ -91,14 +107,24 @@ export default function Members() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => deleteMember(member.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => handleEditMember(member)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => deleteMember(member.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -113,7 +139,11 @@ export default function Members() {
         </Table>
       </div>
 
-      <AddMemberDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
+      <MemberDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        memberToEdit={memberToEdit}
+      />
     </div>
   )
 }

@@ -8,6 +8,7 @@ interface AppState {
   roles: Role[]
   schedules: Schedule[]
   addMember: (member: Omit<Member, 'id'>) => void
+  updateMember: (id: string, member: Partial<Member>) => void
   deleteMember: (id: string) => void
   addSchedule: (schedule: Omit<Schedule, 'id'>) => void
 }
@@ -28,6 +29,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const updateMember = (id: string, updatedMember: Partial<Member>) => {
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...updatedMember } : m)))
+    toast({ title: 'Membro atualizado', description: `Os dados foram salvos com sucesso.` })
+  }
+
   const deleteMember = (id: string) => {
     setMembers((prev) => prev.filter((m) => m.id !== id))
     toast({ title: 'Membro removido', description: `O cadastro foi excluído.` })
@@ -45,7 +51,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return React.createElement(
     AppContext.Provider,
-    { value: { members, roles, schedules, addMember, deleteMember, addSchedule } },
+    { value: { members, roles, schedules, addMember, updateMember, deleteMember, addSchedule } },
     children,
   )
 }

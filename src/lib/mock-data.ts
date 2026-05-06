@@ -4,7 +4,7 @@ import { addDays, format, setHours, setMinutes } from 'date-fns'
 export const mockRoles: Role[] = [
   {
     id: 'r1',
-    name: 'Comentarista',
+    name: 'Comentários',
     description: 'Guia a assembleia durante a celebração',
     iconName: 'Mic',
     color: 'bg-blue-500',
@@ -25,7 +25,7 @@ export const mockRoles: Role[] = [
   },
   {
     id: 'r4',
-    name: 'Salmista',
+    name: 'Salmos',
     description: 'Canta ou recita o Salmo Responsorial',
     iconName: 'Music',
     color: 'bg-emerald-500',

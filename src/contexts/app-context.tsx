@@ -16,10 +16,10 @@ type AppContextType = {
 }
 
 const defaultRoles: Role[] = [
-  { id: '1', name: 'Comentarista', icon: 'Mic', color: 'blue' },
+  { id: '1', name: 'Comentários', icon: 'Mic', color: 'blue' },
   { id: '2', name: 'Leitor', icon: 'BookOpen', color: 'emerald' },
   { id: '3', name: 'Preces', icon: 'MessageCircleHeart', color: 'purple' },
-  { id: '4', name: 'Salmista', icon: 'Music', color: 'amber' },
+  { id: '4', name: 'Salmos', icon: 'Music', color: 'amber' },
 ]
 
 const defaultMembers: Member[] = [
