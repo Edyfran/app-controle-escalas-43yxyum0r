@@ -1,5 +1,5 @@
 import { Search, LogOut, User } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Input } from '@/components/ui/input'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -11,8 +11,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import useAppStore from '@/stores/main'
 
 export function AppHeader() {
+  const navigate = useNavigate()
+  const { session, parishName, signOut } = useAppStore()
+
+  const handleLogout = async () => {
+    await signOut()
+    navigate('/login')
+  }
+
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 shadow-sm sm:px-6">
       <SidebarTrigger className="-ml-2" />
@@ -41,8 +50,10 @@ export function AppHeader() {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Coordenador</p>
-                <p className="text-xs leading-none text-muted-foreground">coord@paroquia.com</p>
+                <p className="text-sm font-medium leading-none">{parishName ?? 'Coordenador'}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {session?.user.email}
+                </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -54,13 +65,11 @@ export function AppHeader() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              asChild
-              className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+              onClick={handleLogout}
+              className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
             >
-              <Link to="/login" className="cursor-pointer">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
-              </Link>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sair</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

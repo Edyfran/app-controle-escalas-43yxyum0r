@@ -15,11 +15,9 @@ import {
 import useAppStore from '@/stores/main'
 import { toast } from '@/hooks/use-toast'
 
-export default function Register() {
+export default function PortalRegister() {
   const navigate = useNavigate()
-  const { signUp } = useAppStore()
-  const [name, setName] = useState('')
-  const [parish, setParish] = useState('')
+  const { signUpMember } = useAppStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -27,24 +25,24 @@ export default function Register() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    const { error, needsEmailConfirmation } = await signUp(email, password, name, parish)
+    const { error, needsEmailConfirmation } = await signUpMember(email, password)
     setIsSubmitting(false)
 
     if (error) {
-      toast({ title: 'Erro ao cadastrar', description: error, variant: 'destructive' })
+      toast({ title: 'Erro ao criar acesso', description: error, variant: 'destructive' })
       return
     }
 
     if (needsEmailConfirmation) {
       toast({
         title: 'Confirme seu email',
-        description: 'Enviamos um link de confirmação para o seu email antes de acessar o painel.',
+        description: 'Enviamos um link de confirmação para o seu email.',
       })
-      navigate('/login')
+      navigate('/portal/entrar')
       return
     }
 
-    navigate('/')
+    navigate('/portal')
   }
 
   return (
@@ -54,51 +52,32 @@ export default function Register() {
           <div className="bg-primary text-primary-foreground p-3 rounded-xl mb-2">
             <BookOpen className="size-8" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">LiturgiaSync</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Portal do Membro</h1>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Criar Conta</CardTitle>
+            <CardTitle>Criar Acesso</CardTitle>
             <CardDescription>
-              Cadastre sua paróquia para começar a gerenciar as escalas
+              Use o mesmo email que seu coordenador cadastrou na sua ficha para vincular sua
+              conta automaticamente.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleRegister}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome do Coordenador</Label>
-                <Input
-                  id="name"
-                  placeholder="João Silva"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="parish">Nome da Paróquia/Comunidade</Label>
-                <Input
-                  id="parish"
-                  placeholder="Paróquia São José"
-                  value={parish}
-                  onChange={(e) => setParish(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="coord@paroquia.com"
+                  placeholder="voce@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password">Crie uma senha</Label>
                 <Input
                   id="password"
                   type="password"
@@ -111,11 +90,11 @@ export default function Register() {
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Cadastrando...' : 'Cadastrar'}
+                {isSubmitting ? 'Criando...' : 'Criar Acesso'}
               </Button>
               <div className="text-sm text-center text-muted-foreground">
-                Já possui uma conta?{' '}
-                <Link to="/login" className="text-primary hover:underline font-medium">
+                Já tem senha?{' '}
+                <Link to="/portal/entrar" className="text-primary hover:underline font-medium">
                   Entrar
                 </Link>
               </div>

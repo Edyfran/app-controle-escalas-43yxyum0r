@@ -1,12 +1,19 @@
 import { Users, CalendarDays, AlertCircle, Shield } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import useAppStore from '@/stores/main'
+import { getUpcomingSchedules } from '@/lib/schedule-dates'
 
 export function StatCards() {
   const { members, roles, schedules } = useAppStore()
 
   const activeMembers = members.filter((m) => m.status === 'Ativo').length
-  const pendingSchedules = schedules.filter((s) => s.status === 'Pendente').length
+  // Actual open slots in upcoming celebrations — not just schedules whose overall status
+  // happens to be "Pendente" (leitor2 is optional, so an empty leitor2 doesn't count as a vaga).
+  const openSlots = getUpcomingSchedules(schedules).reduce((count, s) => {
+    const vacantAssignments = s.assignments.filter((a) => a.memberId === null).length
+    const vacantLeitor1 = s.leitor1 ? 0 : 1
+    return count + vacantAssignments + vacantLeitor1
+  }, 0)
 
   const stats = [
     {
@@ -23,10 +30,10 @@ export function StatCards() {
     },
     {
       title: 'Vagas em Aberto',
-      value: pendingSchedules.toString(),
+      value: openSlots.toString(),
       icon: AlertCircle,
       desc: 'Precisam de atenção',
-      alert: pendingSchedules > 0,
+      alert: openSlots > 0,
     },
     {
       title: 'Funções Cadastradas',

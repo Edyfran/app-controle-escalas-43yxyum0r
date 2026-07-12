@@ -34,3 +34,6 @@ screenshot.png
 
 # Environment variables
 .env*
+
+# MCP config (contains Supabase access token)
+.mcp.json

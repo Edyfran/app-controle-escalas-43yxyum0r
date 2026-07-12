@@ -7,7 +7,9 @@ import useAppStore from '@/stores/main'
 
 export default function Index() {
   const { members } = useAppStore()
-  const recentMembers = members.slice(0, 4)
+  // `members` comes back oldest-first (ordered by created_at ascending in the store); slice a
+  // copy of the tail and reverse that copy so "recent" actually means most recently added.
+  const recentMembers = members.slice(-4).reverse()
 
   return (
     <div className="space-y-6">

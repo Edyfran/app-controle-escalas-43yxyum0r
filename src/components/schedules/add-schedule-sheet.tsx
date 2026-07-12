@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,39 +23,92 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 import useAppStore from '@/stores/main'
+import { Schedule } from '@/types'
 
 interface Props {
   open: boolean
   onOpenChange: (o: boolean) => void
+  scheduleToEdit?: Schedule | null
 }
 
-export function AddScheduleSheet({ open, onOpenChange }: Props) {
-  const { roles, members, addSchedule } = useAppStore()
+export function AddScheduleSheet({ open, onOpenChange, scheduleToEdit }: Props) {
+  const { roles, members, addSchedule, updateSchedule } = useAppStore()
   const [title, setTitle] = useState('Missa Dominical')
   const [date, setDate] = useState<Date>(new Date())
   const [time, setTime] = useState('19:00')
+  const [status, setStatus] = useState<Schedule['status']>('Pendente')
   const [assignments, setAssignments] = useState<Record<string, string>>({})
   const [leitor1, setLeitor1] = useState<string>('none')
   const [leitor2, setLeitor2] = useState<string>('none')
 
+  useEffect(() => {
+    if (!open) return
+
+    if (scheduleToEdit) {
+      setTitle(scheduleToEdit.title)
+      setDate(new Date(scheduleToEdit.date))
+      setTime(scheduleToEdit.time)
+      setStatus(scheduleToEdit.status)
+      setAssignments(
+        Object.fromEntries(
+          scheduleToEdit.assignments.map((a) => [a.roleId, a.memberId ?? 'none']),
+        ),
+      )
+      setLeitor1(scheduleToEdit.leitor1 ?? 'none')
+      setLeitor2(scheduleToEdit.leitor2 ?? 'none')
+    } else {
+      setTitle('Missa Dominical')
+      setDate(new Date())
+      setTime('19:00')
+      setStatus('Pendente')
+      setAssignments({})
+      setLeitor1('none')
+      setLeitor2('none')
+    }
+  }, [open, scheduleToEdit])
+
+  // Soft warning only — small parishes sometimes genuinely need the same volunteer twice.
+  const currentSelections: { slotKey: string; memberId: string }[] = [
+    ...Object.entries(assignments)
+      .filter(([, memberId]) => memberId && memberId !== 'none')
+      .map(([roleId, memberId]) => ({ slotKey: `role:${roleId}`, memberId })),
+    ...(leitor1 !== 'none' ? [{ slotKey: 'leitor1', memberId: leitor1 }] : []),
+    ...(leitor2 !== 'none' ? [{ slotKey: 'leitor2', memberId: leitor2 }] : []),
+  ]
+
+  const isSelectedElsewhere = (memberId: string, currentSlotKey: string) =>
+    currentSelections.some((s) => s.memberId === memberId && s.slotKey !== currentSlotKey)
+
   const handleSave = () => {
     const formattedAssignments = roles
       .filter((r) => r.name !== 'Leitor')
-      .map((r) => ({
-        id: Math.random().toString(),
-        roleId: r.id,
-        memberId: assignments[r.id] && assignments[r.id] !== 'none' ? assignments[r.id] : null,
-      }))
+      .map((r) => {
+        const existing = scheduleToEdit?.assignments.find((a) => a.roleId === r.id)
+        return {
+          id: existing?.id ?? Math.random().toString(),
+          roleId: r.id,
+          memberId: assignments[r.id] && assignments[r.id] !== 'none' ? assignments[r.id] : null,
+          confirmationStatus: existing?.confirmationStatus ?? ('Pendente' as const),
+        }
+      })
 
-    addSchedule({
+    const scheduleData = {
       title,
       date: date.toISOString(),
       time,
-      status: 'Pendente',
+      status,
       assignments: formattedAssignments,
       leitor1: leitor1 !== 'none' ? leitor1 : null,
+      leitor1Status: scheduleToEdit?.leitor1Status ?? ('Pendente' as const),
       leitor2: leitor2 !== 'none' ? leitor2 : null,
-    })
+      leitor2Status: scheduleToEdit?.leitor2Status ?? ('Pendente' as const),
+    }
+
+    if (scheduleToEdit) {
+      updateSchedule(scheduleToEdit.id, scheduleData)
+    } else {
+      addSchedule(scheduleData)
+    }
     onOpenChange(false)
   }
 
@@ -63,7 +116,7 @@ export function AddScheduleSheet({ open, onOpenChange }: Props) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Nova Escala</SheetTitle>
+          <SheetTitle>{scheduleToEdit ? 'Editar Escala' : 'Nova Escala'}</SheetTitle>
           <SheetDescription>Configure a celebração e escale os membros.</SheetDescription>
         </SheetHeader>
         <div className="py-6 space-y-6">
@@ -99,6 +152,19 @@ export function AddScheduleSheet({ open, onOpenChange }: Props) {
                 <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
               </div>
             </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={status} onValueChange={(v) => setStatus(v as Schedule['status'])}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Rascunho">Rascunho</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Confirmada">Confirmada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="space-y-4">
             <h3 className="text-sm font-medium border-b pb-2">Escalar Equipe</h3>
@@ -120,6 +186,7 @@ export function AddScheduleSheet({ open, onOpenChange }: Props) {
                           {leitorMembers.map((m) => (
                             <SelectItem key={m.id} value={m.id}>
                               {m.name}
+                              {isSelectedElsewhere(m.id, 'leitor1') && ' (já escalado)'}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -136,6 +203,7 @@ export function AddScheduleSheet({ open, onOpenChange }: Props) {
                           {leitorMembers.map((m) => (
                             <SelectItem key={m.id} value={m.id}>
                               {m.name}
+                              {isSelectedElsewhere(m.id, 'leitor2') && ' (já escalado)'}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -161,6 +229,7 @@ export function AddScheduleSheet({ open, onOpenChange }: Props) {
                         .map((m) => (
                           <SelectItem key={m.id} value={m.id}>
                             {m.name}
+                            {isSelectedElsewhere(m.id, `role:${role.id}`) && ' (já escalado)'}
                           </SelectItem>
                         ))}
                     </SelectContent>
@@ -172,7 +241,7 @@ export function AddScheduleSheet({ open, onOpenChange }: Props) {
         </div>
         <SheetFooter className="pt-4">
           <Button onClick={handleSave} className="w-full">
-            Salvar Escala
+            {scheduleToEdit ? 'Salvar Alterações' : 'Salvar Escala'}
           </Button>
         </SheetFooter>
       </SheetContent>

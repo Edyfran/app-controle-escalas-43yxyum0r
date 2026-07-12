@@ -1,9 +1,29 @@
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ChangePasswordCard } from '@/components/ChangePasswordCard'
+import useAppStore from '@/stores/main'
 
 export default function Settings() {
+  const { parishName, parishDiocese, updateParish } = useAppStore()
+  const [name, setName] = useState('')
+  const [diocese, setDiocese] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    setName(parishName ?? '')
+    setDiocese(parishDiocese ?? '')
+  }, [parishName, parishDiocese])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    await updateParish({ name, diocese })
+    setIsSubmitting(false)
+  }
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -16,18 +36,29 @@ export default function Settings() {
           <CardTitle>Perfil da Paróquia</CardTitle>
           <CardDescription>Informações básicas sobre a comunidade.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="parish">Nome da Paróquia</Label>
-            <Input id="parish" defaultValue="Paróquia São José" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="diocese">Diocese/Arquidiocese</Label>
-            <Input id="diocese" defaultValue="Arquidiocese de São Paulo" />
-          </div>
-          <Button>Salvar Alterações</Button>
-        </CardContent>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="parish">Nome da Paróquia</Label>
+              <Input id="parish" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="diocese">Diocese/Arquidiocese</Label>
+              <Input
+                id="diocese"
+                value={diocese}
+                onChange={(e) => setDiocese(e.target.value)}
+                placeholder="Ex: Arquidiocese de São Paulo"
+              />
+            </div>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </CardContent>
+        </form>
       </Card>
+
+      <ChangePasswordCard />
 
       <Card>
         <CardHeader>

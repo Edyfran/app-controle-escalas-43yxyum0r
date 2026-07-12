@@ -6,10 +6,13 @@ export interface Role {
   color: string
 }
 
+export type ConfirmationStatus = 'Pendente' | 'Confirmado' | 'Recusado'
+
 export interface Member {
   id: string
   name: string
   phone: string
+  email?: string
   avatarUrl: string
   roleIds: string[]
   availability: 'Semanal' | 'Quinzenal' | 'Mensal'
@@ -21,6 +24,7 @@ export interface ScheduleAssignment {
   id: string
   roleId: string
   memberId: string | null
+  confirmationStatus: ConfirmationStatus
 }
 
 export interface Schedule {
@@ -32,5 +36,7 @@ export interface Schedule {
   status: 'Confirmada' | 'Pendente' | 'Rascunho'
   assignments: ScheduleAssignment[]
   leitor1?: string | null
+  leitor1Status: ConfirmationStatus
   leitor2?: string | null
+  leitor2Status: ConfirmationStatus
 }

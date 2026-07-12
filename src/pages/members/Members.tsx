@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Search, Trash2, Edit2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,17 +12,53 @@ import {
 } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { MemberDialog } from '@/components/members/member-dialog'
+import { PaginationControls } from '@/components/PaginationControls'
+import { usePagination } from '@/hooks/use-pagination'
 import useAppStore from '@/stores/main'
 import { Member } from '@/types'
 
+const PAGE_SIZE = 10
+
 export default function Members() {
-  const { members, roles, deleteMember } = useAppStore()
+  const { members, roles, schedules, deleteMember } = useAppStore()
   const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [availabilityFilter, setAvailabilityFilter] = useState('all')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [memberToEdit, setMemberToEdit] = useState<Member | null>(null)
+  const [memberToDelete, setMemberToDelete] = useState<Member | null>(null)
 
-  const filteredMembers = members.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()))
+  const filteredMembers = members.filter(
+    (m) =>
+      m.name.toLowerCase().includes(search.toLowerCase()) &&
+      (roleFilter === 'all' || m.roleIds.includes(roleFilter)) &&
+      (availabilityFilter === 'all' || m.availability === availabilityFilter),
+  )
+
+  const { page, setPage, totalPages, paginatedItems } = usePagination(filteredMembers, PAGE_SIZE)
+
+  useEffect(() => {
+    setPage(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, roleFilter, availabilityFilter])
 
   const handleAddMember = () => {
     setMemberToEdit(null)
@@ -32,6 +68,20 @@ export default function Members() {
   const handleEditMember = (member: Member) => {
     setMemberToEdit(member)
     setIsDialogOpen(true)
+  }
+
+  const scheduleUsageFor = (memberId: string) =>
+    schedules.filter(
+      (s) =>
+        s.assignments.some((a) => a.memberId === memberId) ||
+        s.leitor1 === memberId ||
+        s.leitor2 === memberId,
+    ).length
+
+  const handleConfirmDelete = () => {
+    if (!memberToDelete) return
+    deleteMember(memberToDelete.id)
+    setMemberToDelete(null)
   }
 
   return (
@@ -46,14 +96,40 @@ export default function Members() {
         </Button>
       </div>
 
-      <div className="flex items-center gap-2 max-w-sm">
-        <Search className="h-4 w-4 text-muted-foreground absolute ml-3" />
-        <Input
-          placeholder="Buscar por nome..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 bg-card"
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 max-w-sm flex-1 min-w-[200px]">
+          <Search className="h-4 w-4 text-muted-foreground absolute ml-3" />
+          <Input
+            placeholder="Buscar por nome..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 bg-card"
+          />
+        </div>
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-[180px] bg-card">
+            <SelectValue placeholder="Função" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as funções</SelectItem>
+            {roles.map((role) => (
+              <SelectItem key={role.id} value={role.id}>
+                {role.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
+          <SelectTrigger className="w-[180px] bg-card">
+            <SelectValue placeholder="Disponibilidade" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as frequências</SelectItem>
+            <SelectItem value="Semanal">Semanal</SelectItem>
+            <SelectItem value="Quinzenal">Quinzenal</SelectItem>
+            <SelectItem value="Mensal">Mensal</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="border rounded-lg bg-card overflow-hidden">
@@ -69,7 +145,7 @@ export default function Members() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredMembers.map((member) => (
+            {paginatedItems.map((member) => (
               <TableRow key={member.id}>
                 <TableCell className="flex items-center gap-3">
                   <Avatar className="size-9">
@@ -120,7 +196,7 @@ export default function Members() {
                       variant="ghost"
                       size="icon"
                       className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => deleteMember(member.id)}
+                      onClick={() => setMemberToDelete(member)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -139,11 +215,43 @@ export default function Members() {
         </Table>
       </div>
 
+      <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
+
       <MemberDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         memberToEdit={memberToEdit}
       />
+
+      <AlertDialog open={!!memberToDelete} onOpenChange={(o) => !o && setMemberToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir "{memberToDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {memberToDelete &&
+                (() => {
+                  const scheduleCount = scheduleUsageFor(memberToDelete.id)
+                  const linkedNote = memberToDelete.email
+                    ? ' Se ele tiver acesso ao portal, perderá o vínculo com a paróquia.'
+                    : ''
+                  if (scheduleCount === 0) {
+                    return `Esta ação não pode ser desfeita.${linkedNote}`
+                  }
+                  return `Ele está escalado em ${scheduleCount} celebração(ões) — essas vagas ficarão em aberto. Esta ação não pode ser desfeita.${linkedNote}`
+                })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

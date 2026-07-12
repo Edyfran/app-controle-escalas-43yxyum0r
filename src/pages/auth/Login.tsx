@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -12,12 +13,26 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import useAppStore from '@/stores/main'
+import { toast } from '@/hooks/use-toast'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { signIn } = useAppStore()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
+    const { error } = await signIn(email, password)
+    setIsSubmitting(false)
+
+    if (error) {
+      toast({ title: 'Erro ao entrar', description: error, variant: 'destructive' })
+      return
+    }
     navigate('/')
   }
 
@@ -43,16 +58,29 @@ export default function Login() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="coord@paroquia.com" required />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="coord@paroquia.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Senha</Label>
-                  <a href="#" className="text-sm text-primary hover:underline">
+                  <Link to="/esqueci-senha" className="text-sm text-primary hover:underline">
                     Esqueceu a senha?
-                  </a>
+                  </Link>
                 </div>
-                <Input id="password" type="password" required />
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox id="remember" />
@@ -62,13 +90,19 @@ export default function Login() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full">
-                Entrar no Painel
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Entrando...' : 'Entrar no Painel'}
               </Button>
               <div className="text-sm text-center text-muted-foreground">
                 Não tem uma conta?{' '}
                 <Link to="/register" className="text-primary hover:underline font-medium">
                   Cadastre sua Paróquia
+                </Link>
+              </div>
+              <div className="text-sm text-center text-muted-foreground">
+                É membro da pastoral?{' '}
+                <Link to="/portal/entrar" className="text-primary hover:underline font-medium">
+                  Acesse o portal
                 </Link>
               </div>
             </CardFooter>

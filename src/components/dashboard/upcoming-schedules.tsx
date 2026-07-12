@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import useAppStore from '@/stores/main'
+import { getUpcomingSchedules } from '@/lib/schedule-dates'
 
 export function UpcomingSchedules() {
   const { schedules } = useAppStore()
-  const upcoming = schedules.slice(1, 6)
+  const upcoming = getUpcomingSchedules(schedules).slice(1, 6)
 
   if (!upcoming.length) return null
 

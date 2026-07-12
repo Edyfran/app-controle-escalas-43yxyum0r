@@ -5,12 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import useAppStore from '@/stores/main'
+import { getUpcomingSchedules } from '@/lib/schedule-dates'
+import { confirmationBadgeClass } from '@/lib/confirmation-status'
 
 export function NextCelebration() {
   const { schedules, members, roles } = useAppStore()
 
-  if (!schedules.length) return null
-  const next = schedules[0] // Assuming sorted
+  const upcoming = getUpcomingSchedules(schedules)
+  if (!upcoming.length) return null
+  const next = upcoming[0]
 
   return (
     <Card className="bg-primary/5 border-primary/20 overflow-hidden relative">
@@ -30,9 +33,9 @@ export function NextCelebration() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-wrap gap-4 text-sm font-medium">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 capitalize">
             <CalendarIcon className="size-4" />{' '}
-            {format(new Date(next.date), "dd 'de' MMMM", { locale: ptBR })}
+            {format(new Date(next.date), "EEEE, dd 'de' MMMM", { locale: ptBR })}
           </div>
           <div className="flex items-center gap-1.5">
             <Clock className="size-4" /> {next.time}
@@ -62,7 +65,7 @@ export function NextCelebration() {
                       <User className="size-4" />
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col">
+                  <div className="flex flex-col flex-1 min-w-0">
                     <span className="text-xs font-semibold text-primary">{role?.name}</span>
                     <span className="text-sm truncate">
                       {member ? (
@@ -72,6 +75,14 @@ export function NextCelebration() {
                       )}
                     </span>
                   </div>
+                  {member && (
+                    <Badge
+                      variant="outline"
+                      className={`text-xs shrink-0 ${confirmationBadgeClass(assignment.confirmationStatus)}`}
+                    >
+                      {assignment.confirmationStatus}
+                    </Badge>
+                  )}
                 </div>
               )
             })}
@@ -84,7 +95,7 @@ export function NextCelebration() {
                   <User className="size-4" />
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col">
+              <div className="flex flex-col flex-1 min-w-0">
                 <span className="text-xs font-semibold text-primary">Leitor 1</span>
                 <span className="text-sm truncate">
                   {next.leitor1 ? (
@@ -94,6 +105,14 @@ export function NextCelebration() {
                   )}
                 </span>
               </div>
+              {next.leitor1 && (
+                <Badge
+                  variant="outline"
+                  className={`text-xs shrink-0 ${confirmationBadgeClass(next.leitor1Status)}`}
+                >
+                  {next.leitor1Status}
+                </Badge>
+              )}
             </div>
             {next.leitor2 && (
               <div className="flex items-center gap-3 bg-background rounded-lg p-2 border shadow-sm">
@@ -105,12 +124,18 @@ export function NextCelebration() {
                     <User className="size-4" />
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
+                <div className="flex flex-col flex-1 min-w-0">
                   <span className="text-xs font-semibold text-primary">Leitor 2</span>
                   <span className="text-sm truncate">
                     {members.find((m) => m.id === next.leitor2)?.name}
                   </span>
                 </div>
+                <Badge
+                  variant="outline"
+                  className={`text-xs shrink-0 ${confirmationBadgeClass(next.leitor2Status)}`}
+                >
+                  {next.leitor2Status}
+                </Badge>
               </div>
             )}
           </div>
