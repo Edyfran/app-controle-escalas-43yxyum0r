@@ -40,8 +40,16 @@ function ConfirmActions({
 }
 
 export default function MySchedule() {
-  const { currentMember, userType, schedules, roles, members, confirmAssignment, confirmLeitor } =
-    useAppStore()
+  const {
+    currentMember,
+    userType,
+    parishName,
+    schedules,
+    roles,
+    members,
+    confirmAssignment,
+    confirmLeitor,
+  } = useAppStore()
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
 
   if (userType === 'unlinked' || !currentMember) {
@@ -50,6 +58,28 @@ export default function MySchedule() {
         <CardContent className="p-6 text-center text-muted-foreground">
           Seu email ainda não está vinculado a nenhuma ficha de membro. Peça ao seu coordenador
           para cadastrar seu email em <strong>Membros</strong>.
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (currentMember.approvalStatus === 'Pendente') {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center text-muted-foreground">
+          Seu cadastro em <strong>{parishName ?? 'sua paróquia'}</strong> está aguardando aprovação
+          do coordenador. Assim que for aprovado, você verá suas escalas aqui.
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (currentMember.approvalStatus === 'Rejeitado') {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center text-muted-foreground">
+          Seu cadastro em <strong>{parishName ?? 'sua paróquia'}</strong> não foi aprovado. Fale
+          com o coordenador se acha que isso é um engano.
         </CardContent>
       </Card>
     )

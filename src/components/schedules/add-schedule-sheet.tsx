@@ -171,7 +171,10 @@ export function AddScheduleSheet({ open, onOpenChange, scheduleToEdit }: Props) 
             {roles.map((role) => {
               if (role.name === 'Leitor') {
                 const leitorMembers = members.filter(
-                  (m) => m.roleIds.includes(role.id) && m.status === 'Ativo',
+                  (m) =>
+                    m.roleIds.includes(role.id) &&
+                    m.status === 'Ativo' &&
+                    m.approvalStatus === 'Aprovado',
                 )
                 return (
                   <div key="leitores" className="space-y-4">
@@ -225,7 +228,12 @@ export function AddScheduleSheet({ open, onOpenChange, scheduleToEdit }: Props) 
                     <SelectContent>
                       <SelectItem value="none">Deixar vago</SelectItem>
                       {members
-                        .filter((m) => m.roleIds.includes(role.id) && m.status === 'Ativo')
+                        .filter(
+                          (m) =>
+                            m.roleIds.includes(role.id) &&
+                            m.status === 'Ativo' &&
+                            m.approvalStatus === 'Aprovado',
+                        )
                         .map((m) => (
                           <SelectItem key={m.id} value={m.id}>
                             {m.name}

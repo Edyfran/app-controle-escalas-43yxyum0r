@@ -10,7 +10,9 @@ function makeMember(overrides: Partial<Member> = {}): Member {
     avatarUrl: '',
     roleIds: ['r1'],
     availability: 'Semanal',
+    availabilitySlots: [],
     status: 'Ativo',
+    approvalStatus: 'Aprovado',
     ...overrides,
   }
 }

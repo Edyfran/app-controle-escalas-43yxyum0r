@@ -21,8 +21,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { WeeklyAvailabilityPicker } from '@/components/members/weekly-availability-picker'
 import useAppStore from '@/stores/main'
-import { Member } from '@/types'
+import { AvailabilitySlot, Member } from '@/types'
 import { toast } from '@/hooks/use-toast'
 
 interface Props {
@@ -38,6 +39,7 @@ export function MemberDialog({ open, onOpenChange, memberToEdit }: Props) {
   const [email, setEmail] = useState('')
   const [availability, setAvailability] = useState('Semanal')
   const [roleIds, setRoleIds] = useState<string[]>([])
+  const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([])
   const [notes, setNotes] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
@@ -51,6 +53,7 @@ export function MemberDialog({ open, onOpenChange, memberToEdit }: Props) {
         setEmail(memberToEdit.email || '')
         setAvailability(memberToEdit.availability)
         setRoleIds(memberToEdit.roleIds || [])
+        setAvailabilitySlots(memberToEdit.availabilitySlots || [])
         setNotes(memberToEdit.notes || '')
         setAvatarUrl(memberToEdit.avatarUrl)
       } else {
@@ -59,6 +62,7 @@ export function MemberDialog({ open, onOpenChange, memberToEdit }: Props) {
         setEmail('')
         setAvailability('Semanal')
         setRoleIds([])
+        setAvailabilitySlots([])
         setNotes('')
         setAvatarUrl('')
       }
@@ -92,6 +96,7 @@ export function MemberDialog({ open, onOpenChange, memberToEdit }: Props) {
         email,
         availability: availability as any,
         roleIds,
+        availabilitySlots,
         notes,
         avatarUrl,
       })
@@ -102,7 +107,9 @@ export function MemberDialog({ open, onOpenChange, memberToEdit }: Props) {
         email,
         availability: availability as any,
         status: 'Ativo',
+        approvalStatus: 'Aprovado',
         roleIds,
+        availabilitySlots,
         notes,
         avatarUrl:
           avatarUrl ||
@@ -217,6 +224,11 @@ export function MemberDialog({ open, onOpenChange, memberToEdit }: Props) {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Dias e horários disponíveis</Label>
+              <WeeklyAvailabilityPicker value={availabilitySlots} onChange={setAvailabilitySlots} />
             </div>
 
             <div className="grid gap-2">

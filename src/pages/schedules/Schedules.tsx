@@ -214,7 +214,11 @@ export default function Schedules() {
   }
 
   const eligibleFor = (roleId?: string) =>
-    roleId ? members.filter((m) => m.roleIds.includes(roleId) && m.status === 'Ativo') : []
+    roleId
+      ? members.filter(
+          (m) => m.roleIds.includes(roleId) && m.status === 'Ativo' && m.approvalStatus === 'Aprovado',
+        )
+      : []
 
   const leitorRole = roles.find((r) => r.name === 'Leitor')
 

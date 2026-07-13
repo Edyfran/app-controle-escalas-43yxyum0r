@@ -7,6 +7,15 @@ export interface Role {
 }
 
 export type ConfirmationStatus = 'Pendente' | 'Confirmado' | 'Recusado'
+export type ApprovalStatus = 'Pendente' | 'Aprovado' | 'Rejeitado'
+export type AvailabilityPeriod = 'Manha' | 'Noite'
+
+// dayOfWeek follows JS Date#getDay(): 0 = Domingo ... 6 = Sábado.
+// Weekdays (1-5) only ever have a night Mass, so 'Manha' is only meaningful for 0 and 6.
+export interface AvailabilitySlot {
+  dayOfWeek: number
+  period: AvailabilityPeriod
+}
 
 export interface Member {
   id: string
@@ -16,8 +25,10 @@ export interface Member {
   avatarUrl: string
   roleIds: string[]
   availability: 'Semanal' | 'Quinzenal' | 'Mensal'
+  availabilitySlots: AvailabilitySlot[]
   status: 'Ativo' | 'Inativo'
   notes?: string
+  approvalStatus: ApprovalStatus
 }
 
 export interface ScheduleAssignment {

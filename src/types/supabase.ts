@@ -6,6 +6,7 @@ export interface Database {
           id: string
           name: string
           diocese: string | null
+          join_code: string
           created_by: string
           created_at: string
         }
@@ -13,6 +14,7 @@ export interface Database {
           id?: string
           name: string
           diocese?: string | null
+          join_code?: string
           created_by: string
           created_at?: string
         }
@@ -20,6 +22,7 @@ export interface Database {
           id?: string
           name?: string
           diocese?: string | null
+          join_code?: string
           created_by?: string
           created_at?: string
         }
@@ -107,6 +110,7 @@ export interface Database {
           availability: 'Semanal' | 'Quinzenal' | 'Mensal'
           status: 'Ativo' | 'Inativo'
           notes: string | null
+          approval_status: 'Pendente' | 'Aprovado' | 'Rejeitado'
           created_at: string
         }
         Insert: {
@@ -120,6 +124,7 @@ export interface Database {
           availability?: 'Semanal' | 'Quinzenal' | 'Mensal'
           status?: 'Ativo' | 'Inativo'
           notes?: string | null
+          approval_status?: 'Pendente' | 'Aprovado' | 'Rejeitado'
           created_at?: string
         }
         Update: {
@@ -133,6 +138,7 @@ export interface Database {
           availability?: 'Semanal' | 'Quinzenal' | 'Mensal'
           status?: 'Ativo' | 'Inativo'
           notes?: string | null
+          approval_status?: 'Pendente' | 'Aprovado' | 'Rejeitado'
           created_at?: string
         }
         Relationships: [
@@ -171,6 +177,32 @@ export interface Database {
             columns: ['role_id']
             isOneToOne: false
             referencedRelation: 'roles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      member_availability: {
+        Row: {
+          member_id: string
+          day_of_week: number
+          period: 'Manha' | 'Noite'
+        }
+        Insert: {
+          member_id: string
+          day_of_week: number
+          period: 'Manha' | 'Noite'
+        }
+        Update: {
+          member_id?: string
+          day_of_week?: number
+          period?: 'Manha' | 'Noite'
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'member_availability_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'members'
             referencedColumns: ['id']
           },
         ]
@@ -298,6 +330,16 @@ export interface Database {
       confirm_leitor: {
         Args: { p_schedule_id: string; p_slot: string; p_status: string }
         Returns: void
+      }
+      roles_for_join_code: {
+        Args: { p_join_code: string }
+        Returns: {
+          id: string
+          name: string
+          description: string
+          icon_name: string
+          color: string
+        }[]
       }
     }
     Enums: Record<string, never>

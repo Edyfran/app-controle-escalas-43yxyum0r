@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/supabase'
-import { ConfirmationStatus, Member, Role, Schedule } from '@/types'
+import { ApprovalStatus, AvailabilitySlot, ConfirmationStatus, Member, Role, Schedule } from '@/types'
 import { toast } from '@/hooks/use-toast'
 
 export type UserType = 'coordinator' | 'member' | 'unlinked' | null
@@ -13,6 +13,7 @@ interface AppState {
   userType: UserType
   parishName: string | null
   parishDiocese: string | null
+  parishJoinCode: string | null
   currentMember: Member | null
   members: Member[]
   roles: Role[]
@@ -27,7 +28,13 @@ interface AppState {
   signUpMember: (
     email: string,
     password: string,
+    name: string,
+    phone: string,
+    joinCode: string,
+    roleIds: string[],
+    availabilitySlots: AvailabilitySlot[],
   ) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>
+  fetchRolesForJoinCode: (joinCode: string) => Promise<Role[]>
   signOut: () => Promise<void>
   requestPasswordReset: (email: string) => Promise<{ error: string | null }>
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>
@@ -36,6 +43,8 @@ interface AppState {
   addMember: (member: Omit<Member, 'id'>) => Promise<void>
   updateMember: (id: string, member: Partial<Member>) => Promise<void>
   deleteMember: (id: string) => Promise<void>
+  approveMember: (id: string) => Promise<void>
+  rejectMember: (id: string) => Promise<void>
   addRole: (role: Omit<Role, 'id'>) => Promise<void>
   updateRole: (id: string, role: Partial<Role>) => Promise<void>
   deleteRole: (id: string) => Promise<void>
@@ -83,7 +92,9 @@ function mapMember(row: {
   availability: Member['availability']
   status: Member['status']
   notes: string | null
+  approval_status: ApprovalStatus
   member_roles: { role_id: string }[] | null
+  member_availability: { day_of_week: number; period: 'Manha' | 'Noite' }[] | null
 }): Member {
   return {
     id: row.id,
@@ -93,8 +104,13 @@ function mapMember(row: {
     avatarUrl: row.avatar_url,
     roleIds: (row.member_roles ?? []).map((mr) => mr.role_id),
     availability: row.availability,
+    availabilitySlots: (row.member_availability ?? []).map((a) => ({
+      dayOfWeek: a.day_of_week,
+      period: a.period,
+    })),
     status: row.status,
     notes: row.notes ?? undefined,
+    approvalStatus: row.approval_status,
   }
 }
 
@@ -146,6 +162,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [parishId, setParishId] = useState<string | null>(null)
   const [parishName, setParishName] = useState<string | null>(null)
   const [parishDiocese, setParishDiocese] = useState<string | null>(null)
+  const [parishJoinCode, setParishJoinCode] = useState<string | null>(null)
   const [currentMember, setCurrentMember] = useState<Member | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [roles, setRoles] = useState<Role[]>([])
@@ -175,6 +192,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setParishId(null)
       setParishName(null)
       setParishDiocese(null)
+      setParishJoinCode(null)
       setCurrentMember(null)
       setMembers([])
       setRoles([])
@@ -190,20 +208,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function loadAllData() {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('parish_id, parishes(name, diocese)')
+      .select('parish_id, parishes(name, diocese, join_code)')
       .maybeSingle()
 
     if (profile) {
       setUserType('coordinator')
       setCurrentMember(null)
-      const parish = profile.parishes as { name: string; diocese: string | null } | null
-      await loadParishData(profile.parish_id, parish?.name ?? null, parish?.diocese ?? null)
+      const parish = profile.parishes as {
+        name: string
+        diocese: string | null
+        join_code: string
+      } | null
+      await loadParishData(
+        profile.parish_id,
+        parish?.name ?? null,
+        parish?.diocese ?? null,
+        parish?.join_code ?? null,
+      )
       return
     }
 
     const { data: memberRow } = await supabase
       .from('members')
-      .select('*, member_roles(role_id)')
+      .select('*, member_roles(role_id), member_availability(day_of_week, period)')
       .eq('user_id', session?.user.id ?? '')
       .maybeSingle()
 
@@ -212,10 +239,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentMember(mapMember(memberRow))
       const { data: parish } = await supabase
         .from('parishes')
-        .select('name, diocese')
+        .select('name, diocese, join_code')
         .eq('id', memberRow.parish_id)
         .maybeSingle()
-      await loadParishData(memberRow.parish_id, parish?.name ?? null, parish?.diocese ?? null)
+      await loadParishData(
+        memberRow.parish_id,
+        parish?.name ?? null,
+        parish?.diocese ?? null,
+        parish?.join_code ?? null,
+      )
       return
     }
 
@@ -223,6 +255,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setParishId(null)
     setParishName(null)
     setParishDiocese(null)
+    setParishJoinCode(null)
     setCurrentMember(null)
     setMembers([])
     setRoles([])
@@ -233,15 +266,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     newParishId: string,
     newParishName: string | null,
     newParishDiocese: string | null,
+    newParishJoinCode: string | null,
   ) {
     setParishId(newParishId)
     setParishName(newParishName)
     setParishDiocese(newParishDiocese)
+    setParishJoinCode(newParishJoinCode)
 
     const [{ data: rolesData }, { data: membersData }, { data: schedulesData }] =
       await Promise.all([
         supabase.from('roles').select('*').order('created_at'),
-        supabase.from('members').select('*, member_roles(role_id)').order('created_at'),
+        supabase
+          .from('members')
+          .select('*, member_roles(role_id), member_availability(day_of_week, period)')
+          .order('created_at'),
         supabase
           .from('schedules')
           .select('*, schedule_assignments(id, role_id, member_id, confirmation_status)')
@@ -267,9 +305,58 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null, needsEmailConfirmation: !error && !data.session }
   }
 
-  const signUpMember = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password })
-    return { error: error?.message ?? null, needsEmailConfirmation: !error && !data.session }
+  const fetchRolesForJoinCode = async (joinCode: string): Promise<Role[]> => {
+    if (!joinCode.trim()) return []
+    const { data, error } = await supabase.rpc('roles_for_join_code', {
+      p_join_code: joinCode.trim().toUpperCase(),
+    })
+    if (error || !data) return []
+    return data.map(mapRole)
+  }
+
+  const signUpMember = async (
+    email: string,
+    password: string,
+    name: string,
+    phone: string,
+    joinCode: string,
+    roleIds: string[],
+    availabilitySlots: AvailabilitySlot[],
+  ) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          phone,
+          join_code: joinCode.trim().toUpperCase(),
+          role_ids: roleIds,
+          availability: availabilitySlots.map((s) => ({ day: s.dayOfWeek, period: s.period })),
+        },
+      },
+    })
+    if (error) {
+      // The trigger raises 'invalid_join_code' as a Postgres exception, which GoTrue surfaces as a
+      // generic 500 — supabase-js discards the real body for 5xx responses, so status is all we have.
+      const message =
+        error.status === 500
+          ? 'Código da paróquia inválido. Confira com o seu coordenador.'
+          : error.message
+      return { error: message, needsEmailConfirmation: false }
+    }
+
+    // Best-effort: let the coordinator know a new signup is waiting for approval. If this
+    // linked straight to a pre-approved roster row instead, the function itself is a no-op.
+    if (data.session) {
+      try {
+        await supabase.functions.invoke('notify-registration', {})
+      } catch (e) {
+        console.warn('Failed to send registration notification', e)
+      }
+    }
+
+    return { error: null, needsEmailConfirmation: !data.session }
   }
 
   const signOut = async () => {
@@ -375,6 +462,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .insert(memberData.roleIds.map((roleId) => ({ member_id: inserted.id, role_id: roleId })))
     }
 
+    if (memberData.availabilitySlots.length > 0) {
+      await supabase.from('member_availability').insert(
+        memberData.availabilitySlots.map((slot) => ({
+          member_id: inserted.id,
+          day_of_week: slot.dayOfWeek,
+          period: slot.period,
+        })),
+      )
+    }
+
     toast({ title: 'Membro adicionado', description: `${memberData.name} foi cadastrado com sucesso.` })
     await loadAllData()
   }
@@ -410,6 +507,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    if (updated.availabilitySlots !== undefined) {
+      await supabase.from('member_availability').delete().eq('member_id', id)
+      if (updated.availabilitySlots.length > 0) {
+        await supabase.from('member_availability').insert(
+          updated.availabilitySlots.map((slot) => ({
+            member_id: id,
+            day_of_week: slot.dayOfWeek,
+            period: slot.period,
+          })),
+        )
+      }
+    }
+
     toast({ title: 'Membro atualizado', description: 'Os dados foram salvos com sucesso.' })
     await loadAllData()
   }
@@ -421,6 +531,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return
     }
     toast({ title: 'Membro removido', description: 'O cadastro foi excluído.' })
+    await loadAllData()
+  }
+
+  const approveMember = async (id: string) => {
+    const { error } = await supabase
+      .from('members')
+      .update({ approval_status: 'Aprovado' })
+      .eq('id', id)
+    if (error) {
+      toast({ title: 'Erro ao aprovar cadastro', description: error.message, variant: 'destructive' })
+      return
+    }
+    toast({ title: 'Cadastro aprovado', description: 'O membro já pode acessar o portal.' })
+    await loadAllData()
+  }
+
+  const rejectMember = async (id: string) => {
+    const { error } = await supabase
+      .from('members')
+      .update({ approval_status: 'Rejeitado' })
+      .eq('id', id)
+    if (error) {
+      toast({ title: 'Erro ao rejeitar cadastro', description: error.message, variant: 'destructive' })
+      return
+    }
+    toast({ title: 'Cadastro rejeitado' })
     await loadAllData()
   }
 
@@ -748,6 +884,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         userType,
         parishName,
         parishDiocese,
+        parishJoinCode,
         currentMember,
         members,
         roles,
@@ -755,6 +892,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         signUpMember,
+        fetchRolesForJoinCode,
         signOut,
         requestPasswordReset,
         updatePassword,
@@ -763,6 +901,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addMember,
         updateMember,
         deleteMember,
+        approveMember,
+        rejectMember,
         addRole,
         updateRole,
         deleteRole,

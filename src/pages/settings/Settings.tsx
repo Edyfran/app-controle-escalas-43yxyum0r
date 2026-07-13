@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
+import { Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ChangePasswordCard } from '@/components/ChangePasswordCard'
 import useAppStore from '@/stores/main'
+import { toast } from '@/hooks/use-toast'
 
 export default function Settings() {
-  const { parishName, parishDiocese, updateParish } = useAppStore()
+  const { parishName, parishDiocese, parishJoinCode, updateParish } = useAppStore()
   const [name, setName] = useState('')
   const [diocese, setDiocese] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -22,6 +24,12 @@ export default function Settings() {
     setIsSubmitting(true)
     await updateParish({ name, diocese })
     setIsSubmitting(false)
+  }
+
+  const handleCopyJoinCode = async () => {
+    if (!parishJoinCode) return
+    await navigator.clipboard.writeText(parishJoinCode)
+    toast({ title: 'Código copiado', description: 'Compartilhe com os membros da pastoral.' })
   }
 
   return (
@@ -56,6 +64,24 @@ export default function Settings() {
             </Button>
           </CardContent>
         </form>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Convite para Membros</CardTitle>
+          <CardDescription>
+            Compartilhe este código com os membros da pastoral para que eles criem o próprio
+            acesso ao portal (o cadastro fica pendente até você aprovar).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <Input value={parishJoinCode ?? ''} readOnly className="font-mono tracking-wider" />
+            <Button type="button" variant="outline" size="icon" onClick={handleCopyJoinCode}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
       </Card>
 
       <ChangePasswordCard />

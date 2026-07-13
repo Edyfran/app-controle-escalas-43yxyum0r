@@ -6,7 +6,9 @@ import { getUpcomingSchedules } from '@/lib/schedule-dates'
 export function StatCards() {
   const { members, roles, schedules } = useAppStore()
 
-  const activeMembers = members.filter((m) => m.status === 'Ativo').length
+  const activeMembers = members.filter(
+    (m) => m.status === 'Ativo' && m.approvalStatus === 'Aprovado',
+  ).length
   // Actual open slots in upcoming celebrations — not just schedules whose overall status
   // happens to be "Pendente" (leitor2 is optional, so an empty leitor2 doesn't count as a vaga).
   const openSlots = getUpcomingSchedules(schedules).reduce((count, s) => {
