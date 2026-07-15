@@ -1,7 +1,6 @@
 import { Search, LogOut, User } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Input } from '@/components/ui/input'
-import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -24,8 +23,6 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 shadow-sm sm:px-6">
-      <SidebarTrigger className="-ml-2" />
-
       <div className="flex flex-1 items-center gap-4 md:gap-8">
         <form className="ml-auto flex-1 sm:flex-initial">
           <div className="relative">

@@ -1,60 +1,117 @@
-import { Link, useLocation } from 'react-router-dom'
-import { CalendarDays, LayoutDashboard, Settings, Shield, Users, BookOpen } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar'
+  BookOpen,
+  CalendarDays,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Shield,
+  Users,
+} from 'lucide-react'
+import { Sidebar, SidebarBody, SidebarLink, useSidebar } from '@/components/ui/sidebar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import useAppStore from '@/stores/main'
+import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'Início', href: '/', icon: LayoutDashboard },
-  { name: 'Escalas', href: '/escalas', icon: CalendarDays },
-  { name: 'Membros', href: '/membros', icon: Users },
-  { name: 'Funções', href: '/funcoes', icon: Shield },
-  { name: 'Configurações', href: '/configuracoes', icon: Settings },
+  { label: 'Início', href: '/', icon: LayoutDashboard },
+  { label: 'Escalas', href: '/escalas', icon: CalendarDays },
+  { label: 'Membros', href: '/membros', icon: Users },
+  { label: 'Funções', href: '/funcoes', icon: Shield },
+  { label: 'Configurações', href: '/configuracoes', icon: Settings },
 ]
 
 export function AppSidebar() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { session, parishName, signOut } = useAppStore()
+
+  const handleLogout = async () => {
+    await signOut()
+    navigate('/login')
+  }
 
   return (
-    <Sidebar variant="inset">
-      <SidebarHeader className="p-4 flex flex-row items-center gap-2">
-        <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
-          <BookOpen className="size-5" />
+    <Sidebar>
+      <SidebarBody className="justify-between gap-10">
+        <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
+          <Logo />
+          <div className="mt-8 flex flex-col gap-2">
+            {navigation.map((item) => {
+              const isActive =
+                location.pathname === item.href ||
+                (item.href !== '/' && location.pathname.startsWith(item.href))
+              return (
+                <SidebarLink
+                  key={item.label}
+                  link={{
+                    label: item.label,
+                    href: item.href,
+                    icon: (
+                      <item.icon
+                        className={cn(
+                          'h-5 w-5 shrink-0',
+                          isActive
+                            ? 'text-primary'
+                            : 'text-neutral-700 dark:text-neutral-200',
+                        )}
+                      />
+                    ),
+                  }}
+                  className={cn(isActive && 'font-medium text-primary')}
+                />
+              )
+            })}
+          </div>
         </div>
-        <span className="font-bold text-lg tracking-tight">LiturgiaSync</span>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigation.map((item) => {
-                const isActive =
-                  location.pathname === item.href ||
-                  (item.href !== '/' && location.pathname.startsWith(item.href))
-                return (
-                  <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                      <Link to={item.href}>
-                        <item.icon />
-                        <span>{item.name}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+        <div className="flex flex-col gap-2">
+          <SidebarLink
+            link={{
+              label: parishName ?? 'Coordenador',
+              href: '/configuracoes',
+              icon: (
+                <Avatar className="h-7 w-7 shrink-0">
+                  <AvatarImage
+                    src="https://img.usecurling.com/ppl/thumbnail?gender=male&seed=99"
+                    alt={parishName ?? 'Coordenador'}
+                  />
+                  <AvatarFallback>{(parishName ?? session?.user.email ?? '?').charAt(0)}</AvatarFallback>
+                </Avatar>
+              ),
+            }}
+          />
+          <SidebarLink
+            link={{
+              label: 'Sair',
+              href: '/login',
+              icon: <LogOut className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+            }}
+            onClick={(e) => {
+              e.preventDefault()
+              handleLogout()
+            }}
+          />
+        </div>
+      </SidebarBody>
     </Sidebar>
+  )
+}
+
+const Logo = () => {
+  const { open } = useSidebar()
+  return (
+    <Link
+      to="/"
+      className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal"
+    >
+      <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shrink-0">
+        <BookOpen className="size-5" />
+      </div>
+      {open && (
+        <span className="font-bold text-lg tracking-tight whitespace-pre text-neutral-900 dark:text-white">
+          LiturgiaSync
+        </span>
+      )}
+    </Link>
   )
 }
