@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
-import { CalendarIcon } from 'lucide-react'
+import { CalendarIcon, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,6 +24,8 @@ import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 import useAppStore from '@/stores/main'
 import { Schedule } from '@/types'
+import { autoFillSchedule, AutoFillSlot } from '@/lib/auto-schedule'
+import { toast } from '@/hooks/use-toast'
 
 interface Props {
   open: boolean
@@ -32,7 +34,7 @@ interface Props {
 }
 
 export function AddScheduleSheet({ open, onOpenChange, scheduleToEdit }: Props) {
-  const { roles, members, addSchedule, updateSchedule } = useAppStore()
+  const { roles, members, schedules, addSchedule, updateSchedule } = useAppStore()
   const [title, setTitle] = useState('Missa Dominical')
   const [date, setDate] = useState<Date>(new Date())
   const [time, setTime] = useState('19:00')
@@ -78,6 +80,65 @@ export function AddScheduleSheet({ open, onOpenChange, scheduleToEdit }: Props) 
 
   const isSelectedElsewhere = (memberId: string, currentSlotKey: string) =>
     currentSelections.some((s) => s.memberId === memberId && s.slotKey !== currentSlotKey)
+
+  const handleAutoFill = () => {
+    const leitorRole = roles.find((r) => r.name === 'Leitor')
+    const slots: AutoFillSlot[] = [
+      ...roles
+        .filter((r) => r.name !== 'Leitor')
+        .map((r) => ({
+          key: `role:${r.id}`,
+          roleId: r.id,
+          currentMemberId: assignments[r.id] && assignments[r.id] !== 'none' ? assignments[r.id] : null,
+        })),
+      ...(leitorRole
+        ? [
+            {
+              key: 'leitor1',
+              roleId: leitorRole.id,
+              currentMemberId: leitor1 !== 'none' ? leitor1 : null,
+            },
+            {
+              key: 'leitor2',
+              roleId: leitorRole.id,
+              currentMemberId: leitor2 !== 'none' ? leitor2 : null,
+            },
+          ]
+        : []),
+    ]
+
+    const { suggestions, unfilled } = autoFillSchedule({ date, time, slots, roles, members, schedules })
+    const filledCount = Object.keys(suggestions).length
+
+    if (filledCount === 0) {
+      toast({
+        title: 'Nada para preencher',
+        description:
+          unfilled.length > 0
+            ? 'Nenhum membro disponível (função, disponibilidade ou regra de semana seguida) para as vagas em aberto.'
+            : 'Todas as funções já estão escaladas.',
+      })
+      return
+    }
+
+    setAssignments((prev) => {
+      const next = { ...prev }
+      for (const [key, memberId] of Object.entries(suggestions)) {
+        if (key.startsWith('role:')) next[key.slice('role:'.length)] = memberId
+      }
+      return next
+    })
+    if (suggestions.leitor1) setLeitor1(suggestions.leitor1)
+    if (suggestions.leitor2) setLeitor2(suggestions.leitor2)
+
+    toast({
+      title: `${filledCount} ${filledCount === 1 ? 'vaga preenchida' : 'vagas preenchidas'} automaticamente`,
+      description:
+        unfilled.length > 0
+          ? `${unfilled.length} ${unfilled.length === 1 ? 'vaga não teve' : 'vagas não tiveram'} membro disponível. Revise antes de salvar.`
+          : 'Revise as sugestões antes de salvar.',
+    })
+  }
 
   const handleSave = () => {
     const formattedAssignments = roles
@@ -167,7 +228,12 @@ export function AddScheduleSheet({ open, onOpenChange, scheduleToEdit }: Props) 
             </div>
           </div>
           <div className="space-y-4">
-            <h3 className="text-sm font-medium border-b pb-2">Escalar Equipe</h3>
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="text-sm font-medium">Escalar Equipe</h3>
+              <Button type="button" variant="outline" size="sm" onClick={handleAutoFill}>
+                <Wand2 className="mr-2 h-3.5 w-3.5" /> Preencher Automaticamente
+              </Button>
+            </div>
             {roles.map((role) => {
               if (role.name === 'Leitor') {
                 const leitorMembers = members.filter(

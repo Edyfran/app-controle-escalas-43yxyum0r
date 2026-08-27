@@ -24,7 +24,7 @@ const navigation = [
 export function AppSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { session, parishName, signOut } = useAppStore()
+  const { session, parishName, parishLogoUrl, signOut } = useAppStore()
 
   const handleLogout = async () => {
     await signOut()
@@ -35,7 +35,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarBody className="justify-between gap-10">
         <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
-          <Logo />
+          <Logo logoUrl={parishLogoUrl} />
           <div className="mt-8 flex flex-col gap-2">
             {navigation.map((item) => {
               const isActive =
@@ -51,9 +51,7 @@ export function AppSidebar() {
                       <item.icon
                         className={cn(
                           'h-5 w-5 shrink-0',
-                          isActive
-                            ? 'text-primary'
-                            : 'text-neutral-700 dark:text-neutral-200',
+                          isActive ? 'text-primary' : 'text-foreground',
                         )}
                       />
                     ),
@@ -84,7 +82,7 @@ export function AppSidebar() {
             link={{
               label: 'Sair',
               href: '/login',
-              icon: <LogOut className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+              icon: <LogOut className="h-5 w-5 shrink-0 text-foreground" />,
             }}
             onClick={(e) => {
               e.preventDefault()
@@ -97,18 +95,22 @@ export function AppSidebar() {
   )
 }
 
-const Logo = () => {
+const Logo = ({ logoUrl }: { logoUrl: string | null }) => {
   const { open } = useSidebar()
   return (
     <Link
       to="/"
       className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal"
     >
-      <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shrink-0">
-        <BookOpen className="size-5" />
-      </div>
+      {logoUrl ? (
+        <img src={logoUrl} alt="Logo" className="h-8 w-8 rounded-lg shrink-0 object-contain bg-white" />
+      ) : (
+        <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shrink-0">
+          <BookOpen className="size-5" />
+        </div>
+      )}
       {open && (
-        <span className="font-bold text-lg tracking-tight whitespace-pre text-neutral-900 dark:text-white">
+        <span className="font-bold text-lg tracking-tight whitespace-pre text-foreground">
           LiturgiaSync
         </span>
       )}

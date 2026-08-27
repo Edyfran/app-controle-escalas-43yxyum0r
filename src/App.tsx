@@ -24,6 +24,7 @@ import PortalLogin from '@/pages/portal/PortalLogin'
 import PortalRegister from '@/pages/portal/PortalRegister'
 import MySchedule from '@/pages/portal/MySchedule'
 import PortalAccount from '@/pages/portal/PortalAccount'
+import SplitLoginCardDemo from '@/pages/demo/SplitLoginCardDemo'
 import NotFound from '@/pages/NotFound'
 
 const App = () => (
@@ -42,6 +43,9 @@ const App = () => (
               redirected away before the user gets a chance to set a new password. */}
           <Route path="/esqueci-senha" element={<ForgotPassword />} />
           <Route path="/redefinir-senha" element={<ResetPassword />} />
+
+          {/* Component preview only — not linked from any nav, not wired to real auth. */}
+          <Route path="/demo/split-login-card" element={<SplitLoginCardDemo />} />
 
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>

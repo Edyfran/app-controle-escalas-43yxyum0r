@@ -5,7 +5,7 @@ import useAppStore from '@/stores/main'
 
 export default function PortalLayout() {
   const navigate = useNavigate()
-  const { parishName, signOut } = useAppStore()
+  const { parishName, parishLogoUrl, signOut } = useAppStore()
 
   const handleLogout = async () => {
     await signOut()
@@ -13,12 +13,20 @@ export default function PortalLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-secondary/30">
+    <div className="min-h-screen bg-muted/30">
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4 shadow-sm sm:px-6">
         <div className="flex items-center gap-2">
-          <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
-            <BookOpen className="size-5" />
-          </div>
+          {parishLogoUrl ? (
+            <img
+              src={parishLogoUrl}
+              alt="Logo"
+              className="h-8 w-8 rounded-lg object-contain bg-white"
+            />
+          ) : (
+            <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
+              <BookOpen className="size-5" />
+            </div>
+          )}
           <span className="font-bold tracking-tight">{parishName ?? 'Portal do Membro'}</span>
         </div>
         <div className="flex items-center gap-1">

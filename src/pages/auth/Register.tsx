@@ -14,12 +14,12 @@ import {
 } from '@/components/ui/card'
 import useAppStore from '@/stores/main'
 import { toast } from '@/hooks/use-toast'
+import { PARISH_NAME } from '@/lib/constants'
 
 export default function Register() {
   const navigate = useNavigate()
   const { signUp } = useAppStore()
   const [name, setName] = useState('')
-  const [parish, setParish] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -27,7 +27,7 @@ export default function Register() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    const { error, needsEmailConfirmation } = await signUp(email, password, name, parish)
+    const { error, needsEmailConfirmation } = await signUp(email, password, name)
     setIsSubmitting(false)
 
     if (error) {
@@ -48,21 +48,20 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-secondary/30 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="flex flex-col items-center space-y-2 text-center">
           <div className="bg-primary text-primary-foreground p-3 rounded-xl mb-2">
             <BookOpen className="size-8" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">LiturgiaSync</h1>
+          <p className="text-sm text-muted-foreground">{PARISH_NAME}</p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Criar Conta</CardTitle>
-            <CardDescription>
-              Cadastre sua paróquia para começar a gerenciar as escalas
-            </CardDescription>
+            <CardDescription>Cadastre-se como coordenador para gerenciar as escalas</CardDescription>
           </CardHeader>
           <form onSubmit={handleRegister}>
             <CardContent className="space-y-4">
@@ -73,16 +72,6 @@ export default function Register() {
                   placeholder="João Silva"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="parish">Nome da Paróquia/Comunidade</Label>
-                <Input
-                  id="parish"
-                  placeholder="Paróquia São José"
-                  value={parish}
-                  onChange={(e) => setParish(e.target.value)}
                   required
                 />
               </div>

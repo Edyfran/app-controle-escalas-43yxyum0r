@@ -1,3 +1,5 @@
+import type { ThemeColors } from '@/lib/theme'
+
 export interface Database {
   public: {
     Tables: {
@@ -7,6 +9,8 @@ export interface Database {
           name: string
           diocese: string | null
           join_code: string
+          logo_url: string | null
+          theme: ThemeColors | null
           created_by: string
           created_at: string
         }
@@ -15,6 +19,8 @@ export interface Database {
           name: string
           diocese?: string | null
           join_code?: string
+          logo_url?: string | null
+          theme?: ThemeColors | null
           created_by: string
           created_at?: string
         }
@@ -23,6 +29,8 @@ export interface Database {
           name?: string
           diocese?: string | null
           join_code?: string
+          logo_url?: string | null
+          theme?: ThemeColors | null
           created_by?: string
           created_at?: string
         }

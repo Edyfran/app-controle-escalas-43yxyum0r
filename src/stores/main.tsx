@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/supabase'
 import { ApprovalStatus, AvailabilitySlot, ConfirmationStatus, Member, Role, Schedule } from '@/types'
 import { toast } from '@/hooks/use-toast'
+import { PARISH_NAME } from '@/lib/constants'
+import { ThemeColors, applyTheme } from '@/lib/theme'
 
 export type UserType = 'coordinator' | 'member' | 'unlinked' | null
 
@@ -14,6 +16,8 @@ interface AppState {
   parishName: string | null
   parishDiocese: string | null
   parishJoinCode: string | null
+  parishLogoUrl: string | null
+  parishTheme: ThemeColors | null
   currentMember: Member | null
   members: Member[]
   roles: Role[]
@@ -23,7 +27,6 @@ interface AppState {
     email: string,
     password: string,
     name: string,
-    parishName: string,
   ) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>
   signUpMember: (
     email: string,
@@ -38,8 +41,14 @@ interface AppState {
   signOut: () => Promise<void>
   requestPasswordReset: (email: string) => Promise<{ error: string | null }>
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>
-  updateParish: (updates: { name?: string; diocese?: string }) => Promise<void>
+  updateParish: (updates: {
+    name?: string
+    diocese?: string
+    logoUrl?: string | null
+    theme?: ThemeColors | null
+  }) => Promise<void>
   uploadMemberPhoto: (file: File) => Promise<{ url: string | null; error: string | null }>
+  uploadParishLogo: (file: File) => Promise<{ url: string | null; error: string | null }>
   addMember: (member: Omit<Member, 'id'>) => Promise<void>
   updateMember: (id: string, member: Partial<Member>) => Promise<void>
   deleteMember: (id: string) => Promise<void>
@@ -163,10 +172,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [parishName, setParishName] = useState<string | null>(null)
   const [parishDiocese, setParishDiocese] = useState<string | null>(null)
   const [parishJoinCode, setParishJoinCode] = useState<string | null>(null)
+  const [parishLogoUrl, setParishLogoUrl] = useState<string | null>(null)
+  const [parishTheme, setParishTheme] = useState<ThemeColors | null>(null)
   const [currentMember, setCurrentMember] = useState<Member | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [roles, setRoles] = useState<Role[]>([])
   const [schedules, setSchedules] = useState<Schedule[]>([])
+
+  useEffect(() => {
+    applyTheme(document.documentElement, parishTheme)
+  }, [parishTheme])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -193,6 +208,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setParishName(null)
       setParishDiocese(null)
       setParishJoinCode(null)
+      setParishLogoUrl(null)
+      setParishTheme(null)
       setCurrentMember(null)
       setMembers([])
       setRoles([])
@@ -208,7 +225,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function loadAllData() {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('parish_id, parishes(name, diocese, join_code)')
+      .select('parish_id, parishes(name, diocese, join_code, logo_url, theme)')
+      .eq('id', session?.user.id ?? '')
       .maybeSingle()
 
     if (profile) {
@@ -218,12 +236,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         name: string
         diocese: string | null
         join_code: string
+        logo_url: string | null
+        theme: ThemeColors | null
       } | null
       await loadParishData(
         profile.parish_id,
         parish?.name ?? null,
         parish?.diocese ?? null,
         parish?.join_code ?? null,
+        parish?.logo_url ?? null,
+        parish?.theme ?? null,
       )
       return
     }
@@ -239,7 +261,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentMember(mapMember(memberRow))
       const { data: parish } = await supabase
         .from('parishes')
-        .select('name, diocese, join_code')
+        .select('name, diocese, join_code, logo_url, theme')
         .eq('id', memberRow.parish_id)
         .maybeSingle()
       await loadParishData(
@@ -247,6 +269,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         parish?.name ?? null,
         parish?.diocese ?? null,
         parish?.join_code ?? null,
+        parish?.logo_url ?? null,
+        parish?.theme ?? null,
       )
       return
     }
@@ -256,6 +280,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setParishName(null)
     setParishDiocese(null)
     setParishJoinCode(null)
+    setParishLogoUrl(null)
+    setParishTheme(null)
     setCurrentMember(null)
     setMembers([])
     setRoles([])
@@ -267,11 +293,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     newParishName: string | null,
     newParishDiocese: string | null,
     newParishJoinCode: string | null,
+    newParishLogoUrl: string | null,
+    newParishTheme: ThemeColors | null,
   ) {
     setParishId(newParishId)
     setParishName(newParishName)
     setParishDiocese(newParishDiocese)
     setParishJoinCode(newParishJoinCode)
+    setParishLogoUrl(newParishLogoUrl)
+    setParishTheme(newParishTheme)
 
     const [{ data: rolesData }, { data: membersData }, { data: schedulesData }] =
       await Promise.all([
@@ -296,11 +326,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null }
   }
 
-  const signUp = async (email: string, password: string, name: string, parish: string) => {
+  const signUp = async (email: string, password: string, name: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name, parish_name: parish } },
+      options: { data: { name, parish_name: PARISH_NAME } },
     })
     return { error: error?.message ?? null, needsEmailConfirmation: !error && !data.session }
   }
@@ -383,15 +413,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const updateParish = async (updates: { name?: string; diocese?: string }) => {
+  const updateParish = async (updates: {
+    name?: string
+    diocese?: string
+    logoUrl?: string | null
+    theme?: ThemeColors | null
+  }) => {
     if (!parishId) return
-    const { error } = await supabase.from('parishes').update(updates).eq('id', parishId)
+    const dbUpdate: Database['public']['Tables']['parishes']['Update'] = {}
+    if (updates.name !== undefined) dbUpdate.name = updates.name
+    if (updates.diocese !== undefined) dbUpdate.diocese = updates.diocese
+    if (updates.logoUrl !== undefined) dbUpdate.logo_url = updates.logoUrl
+    if (updates.theme !== undefined) dbUpdate.theme = updates.theme
+
+    const { error } = await supabase.from('parishes').update(dbUpdate).eq('id', parishId)
     if (error) {
       toast({ title: 'Erro ao atualizar paróquia', description: error.message, variant: 'destructive' })
       return
     }
     if (updates.name !== undefined) setParishName(updates.name)
     if (updates.diocese !== undefined) setParishDiocese(updates.diocese)
+    if (updates.logoUrl !== undefined) setParishLogoUrl(updates.logoUrl)
+    if (updates.theme !== undefined) setParishTheme(updates.theme)
     toast({ title: 'Paróquia atualizada', description: 'As alterações foram salvas com sucesso.' })
   }
 
@@ -427,6 +470,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     const { data } = supabase.storage.from('member-photos').getPublicUrl(path)
+    return { url: data.publicUrl, error: null }
+  }
+
+  const uploadParishLogo = async (file: File) => {
+    if (!parishId) return { url: null, error: 'Paróquia não identificada.' }
+    if (!file.type.startsWith('image/')) {
+      return { url: null, error: 'Selecione um arquivo de imagem.' }
+    }
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      return { url: null, error: 'A imagem deve ter no máximo 5MB.' }
+    }
+
+    const ext = file.name.includes('.') ? file.name.split('.').pop() : 'png'
+    const path = `${parishId}/${crypto.randomUUID()}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('parish-logos')
+      .upload(path, file, { cacheControl: '3600', upsert: false })
+
+    if (uploadError) {
+      return { url: null, error: uploadError.message }
+    }
+
+    const { data } = supabase.storage.from('parish-logos').getPublicUrl(path)
     return { url: data.publicUrl, error: null }
   }
 
@@ -885,6 +952,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         parishName,
         parishDiocese,
         parishJoinCode,
+        parishLogoUrl,
+        parishTheme,
         currentMember,
         members,
         roles,
@@ -898,6 +967,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updatePassword,
         updateParish,
         uploadMemberPhoto,
+        uploadParishLogo,
         addMember,
         updateMember,
         deleteMember,

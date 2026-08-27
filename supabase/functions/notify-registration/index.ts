@@ -90,39 +90,44 @@ Deno.serve(async (req) => {
   if (!coordinatorResponse.ok) {
     return jsonResponse({ error: 'Failed to look up coordinator' }, 500)
   }
-  const coordinators = await coordinatorResponse.json()
-  const coordinator = Array.isArray(coordinators) ? coordinators[0] : null
-  if (!coordinator?.email) {
+  const coordinatorsJson = await coordinatorResponse.json()
+  const coordinators: { name: string | null; email: string }[] = Array.isArray(coordinatorsJson)
+    ? coordinatorsJson
+    : []
+  if (coordinators.length === 0) {
     return jsonResponse({ error: 'Coordinator not found' }, 404)
   }
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h2>Novo cadastro pendente de aprovação</h2>
-      <p>Olá, ${coordinator.name ?? 'coordenador(a)'}!</p>
-      <p><strong>${memberRow.name}</strong> (${memberRow.email}) se cadastrou no portal usando o
-      código de convite da sua paróquia e está aguardando sua aprovação.</p>
-      <p>Acesse Membros no seu painel para aprovar ou rejeitar esse cadastro.</p>
-    </div>
-  `
-
-  const resendResponse = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: FROM_ADDRESS,
-      to: coordinator.email,
-      subject: `Novo cadastro pendente: ${memberRow.name}`,
-      html,
+  // A paróquia can have more than one coordinator — notify all of them, not just one.
+  const sendResults = await Promise.all(
+    coordinators.map((coordinator) => {
+      const html = `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+          <h2>Novo cadastro pendente de aprovação</h2>
+          <p>Olá, ${coordinator.name ?? 'coordenador(a)'}!</p>
+          <p><strong>${memberRow.name}</strong> (${memberRow.email}) se cadastrou no portal usando o
+          código de convite da sua paróquia e está aguardando sua aprovação.</p>
+          <p>Acesse Membros no seu painel para aprovar ou rejeitar esse cadastro.</p>
+        </div>
+      `
+      return fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: FROM_ADDRESS,
+          to: coordinator.email,
+          subject: `Novo cadastro pendente: ${memberRow.name}`,
+          html,
+        }),
+      })
     }),
-  })
+  )
 
-  if (!resendResponse.ok) {
-    const errorBody = await resendResponse.text()
-    return jsonResponse({ error: 'Failed to send email', details: errorBody }, 502)
+  if (sendResults.every((r) => !r.ok)) {
+    return jsonResponse({ error: 'Failed to send email to any coordinator' }, 502)
   }
 
   return jsonResponse({ ok: true }, 200)
