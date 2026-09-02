@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { isPastSchedule, getUpcomingSchedules } from './schedule-dates'
+import { isPastSchedule, getUpcomingSchedules, getSchedulesThisWeek } from './schedule-dates'
 import { Schedule } from '@/types'
 
 function makeSchedule(date: string): Schedule {
@@ -50,5 +50,30 @@ describe('getUpcomingSchedules', () => {
     vi.setSystemTime(new Date('2026-07-07T12:00:00'))
 
     expect(getUpcomingSchedules([makeSchedule('2026-01-01T10:00:00')])).toEqual([])
+  })
+})
+
+describe('getSchedulesThisWeek', () => {
+  // "Now" is Tuesday 2026-07-07 — the containing week runs Sun 2026-07-05 to Sat 2026-07-11.
+  it('keeps only schedules within the current Sunday-to-Saturday week, past or future', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-07T12:00:00'))
+
+    const lastSaturday = makeSchedule('2026-07-04T23:00:00')
+    const thisSunday = makeSchedule('2026-07-05T08:00:00')
+    const today = makeSchedule('2026-07-07T10:00:00')
+    const thisSaturdayNight = makeSchedule('2026-07-11T23:00:00')
+    const nextSunday = makeSchedule('2026-07-12T00:00:00')
+
+    expect(
+      getSchedulesThisWeek([lastSaturday, thisSunday, today, thisSaturdayNight, nextSunday]),
+    ).toEqual([thisSunday, today, thisSaturdayNight])
+  })
+
+  it('returns an empty array when nothing falls in the current week', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-07T12:00:00'))
+
+    expect(getSchedulesThisWeek([makeSchedule('2026-01-01T10:00:00')])).toEqual([])
   })
 })

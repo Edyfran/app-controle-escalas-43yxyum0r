@@ -76,7 +76,7 @@ interface AppState {
 
 export const AppContext = createContext<AppState | null>(null)
 
-function mapRole(row: {
+export function mapRole(row: {
   id: string
   name: string
   description: string
@@ -92,7 +92,7 @@ function mapRole(row: {
   }
 }
 
-function mapMember(row: {
+export function mapMember(row: {
   id: string
   name: string
   phone: string
@@ -123,7 +123,16 @@ function mapMember(row: {
   }
 }
 
-function mapSchedule(row: {
+// Translates the raw Postgres unique-violation message into something a coordinator can
+// actually act on; falls back to the original message for anything else.
+export function friendlyMemberErrorMessage(error: { message: string; code?: string }): string {
+  if (error.code === '23505' && error.message.includes('members_email_unique_idx')) {
+    return 'Esse email já está em uso por outro membro.'
+  }
+  return error.message
+}
+
+export function mapSchedule(row: {
   id: string
   title: string
   date: string
@@ -436,15 +445,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (updates.logoUrl !== undefined) setParishLogoUrl(updates.logoUrl)
     if (updates.theme !== undefined) setParishTheme(updates.theme)
     toast({ title: 'Paróquia atualizada', description: 'As alterações foram salvas com sucesso.' })
-  }
-
-  // Translates the raw Postgres unique-violation message into something a coordinator can
-  // actually act on; falls back to the original message for anything else.
-  function friendlyMemberErrorMessage(error: { message: string; code?: string }): string {
-    if (error.code === '23505' && error.message.includes('members_email_unique_idx')) {
-      return 'Esse email já está em uso por outro membro.'
-    }
-    return error.message
   }
 
   const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024

@@ -11,6 +11,7 @@
     "build:dev": "vite build --mode development",
     "lint": "oxlint src",
     "lint:fix": "oxlint src --fix",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "preview": "vite preview",

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { format, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Check, X, CalendarPlus } from 'lucide-react'

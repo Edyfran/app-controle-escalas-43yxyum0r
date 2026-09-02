@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - run: npm run test
+
+      - name: Build
+        # VITE_SUPABASE_URL is the project's public URL (safe to commit, same value as
+        # .env.local.example); the anon key is a placeholder since the build only needs
+        # something to inline — no real Supabase calls happen at build time.
+        env:
+          VITE_SUPABASE_URL: https://codsuvrbljrdouluabjh.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-key
+        run: npm run build

@@ -1,7 +1,7 @@
 import { Users, CalendarDays, AlertCircle, Shield } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import useAppStore from '@/stores/main'
-import { getUpcomingSchedules } from '@/lib/schedule-dates'
+import { getUpcomingSchedules, getSchedulesThisWeek } from '@/lib/schedule-dates'
 
 export function StatCards() {
   const { members, roles, schedules } = useAppStore()
@@ -9,6 +9,7 @@ export function StatCards() {
   const activeMembers = members.filter(
     (m) => m.status === 'Ativo' && m.approvalStatus === 'Aprovado',
   ).length
+  const schedulesThisWeek = getSchedulesThisWeek(schedules).length
   // Actual open slots in upcoming celebrations — not just schedules whose overall status
   // happens to be "Pendente" (leitor2 is optional, so an empty leitor2 doesn't count as a vaga).
   const openSlots = getUpcomingSchedules(schedules).reduce((count, s) => {
@@ -26,7 +27,7 @@ export function StatCards() {
     },
     {
       title: 'Escalas da Semana',
-      value: schedules.length.toString(),
+      value: schedulesThisWeek.toString(),
       icon: CalendarDays,
       desc: 'Celebrações agendadas',
     },
