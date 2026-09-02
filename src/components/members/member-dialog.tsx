@@ -37,7 +37,7 @@ export function MemberDialog({ open, onOpenChange, memberToEdit }: Props) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
-  const [availability, setAvailability] = useState('Semanal')
+  const [availability, setAvailability] = useState<Member['availability']>('Semanal')
   const [roleIds, setRoleIds] = useState<string[]>([])
   const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([])
   const [notes, setNotes] = useState('')
@@ -94,7 +94,7 @@ export function MemberDialog({ open, onOpenChange, memberToEdit }: Props) {
         name,
         phone,
         email,
-        availability: availability as any,
+        availability,
         roleIds,
         availabilitySlots,
         notes,
@@ -105,7 +105,7 @@ export function MemberDialog({ open, onOpenChange, memberToEdit }: Props) {
         name,
         phone,
         email,
-        availability: availability as any,
+        availability,
         status: 'Ativo',
         approvalStatus: 'Aprovado',
         roleIds,
@@ -196,7 +196,10 @@ export function MemberDialog({ open, onOpenChange, memberToEdit }: Props) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="availability">Disponibilidade</Label>
-              <Select value={availability} onValueChange={setAvailability}>
+              <Select
+                value={availability}
+                onValueChange={(v) => setAvailability(v as Member['availability'])}
+              >
                 <SelectTrigger id="availability">
                   <SelectValue />
                 </SelectTrigger>

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AppProvider } from '@/stores/main'
 import {
   ProtectedRoute,
@@ -28,52 +29,54 @@ import SplitLoginCardDemo from '@/pages/demo/SplitLoginCardDemo'
 import NotFound from '@/pages/NotFound'
 
 const App = () => (
-  <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-    <AppProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route element={<PublicOnlyRoute />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-          </Route>
-
-          {/* Unguarded: the emailed reset link creates a recovery session that must not be
-              redirected away before the user gets a chance to set a new password. */}
-          <Route path="/esqueci-senha" element={<ForgotPassword />} />
-          <Route path="/redefinir-senha" element={<ResetPassword />} />
-
-          {/* Component preview only — not linked from any nav, not wired to real auth. */}
-          <Route path="/demo/split-login-card" element={<SplitLoginCardDemo />} />
-
-          <Route element={<ProtectedRoute />}>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/membros" element={<Members />} />
-              <Route path="/funcoes" element={<Roles />} />
-              <Route path="/escalas" element={<Schedules />} />
-              <Route path="/configuracoes" element={<Settings />} />
+  <ErrorBoundary>
+    <BrowserRouter>
+      <AppProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route element={<PublicOnlyRoute />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
             </Route>
-          </Route>
 
-          <Route element={<MemberPublicOnlyRoute />}>
-            <Route path="/portal/entrar" element={<PortalLogin />} />
-            <Route path="/portal/cadastro" element={<PortalRegister />} />
-          </Route>
+            {/* Unguarded: the emailed reset link creates a recovery session that must not be
+                redirected away before the user gets a chance to set a new password. */}
+            <Route path="/esqueci-senha" element={<ForgotPassword />} />
+            <Route path="/redefinir-senha" element={<ResetPassword />} />
 
-          <Route element={<MemberProtectedRoute />}>
-            <Route element={<PortalLayout />}>
-              <Route path="/portal" element={<MySchedule />} />
-              <Route path="/portal/conta" element={<PortalAccount />} />
+            {/* Component preview only — not linked from any nav, not wired to real auth. */}
+            <Route path="/demo/split-login-card" element={<SplitLoginCardDemo />} />
+
+            <Route element={<ProtectedRoute />}>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/membros" element={<Members />} />
+                <Route path="/funcoes" element={<Roles />} />
+                <Route path="/escalas" element={<Schedules />} />
+                <Route path="/configuracoes" element={<Settings />} />
+              </Route>
             </Route>
-          </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
-    </AppProvider>
-  </BrowserRouter>
+            <Route element={<MemberPublicOnlyRoute />}>
+              <Route path="/portal/entrar" element={<PortalLogin />} />
+              <Route path="/portal/cadastro" element={<PortalRegister />} />
+            </Route>
+
+            <Route element={<MemberProtectedRoute />}>
+              <Route element={<PortalLayout />}>
+                <Route path="/portal" element={<MySchedule />} />
+                <Route path="/portal/conta" element={<PortalAccount />} />
+              </Route>
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </AppProvider>
+    </BrowserRouter>
+  </ErrorBoundary>
 )
 
 export default App
